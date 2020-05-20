@@ -113,20 +113,30 @@ app.get('/messages',(req, res) => {
 //Post Message Service Endpoint
 app.post('/messages', async (req,res) => {
 
-    //message object based on the model to pass into db
-    var message = new Message (req.body)
+    // adding try catch block
+    try{
+        // throw("I am an error") //testing catch block
+        //message object based on the model to pass into db
+        var message = new Message (req.body)
 
-    var messageSave = await message.save()
-    console.log('Saved')
-    var censored = await Message.findOne({message: 'Tottenham'})
- 
-    if(censored)
-        await Message.deleteOne({_id: censored.id})
-    else
-        // messages.push(req.body)//adding the new messages to the messages array.
-        io.emit('message', req.body) //submiting an event (notification) from the server to all clients notifying them of a new message. Here message is the event name and req.body is the message
-    res.sendStatus(200)
+        var messageSave = await message.save()
+        console.log('Saved')
+        var censored = await Message.findOne({message: 'Tottenham'})
+    
+        if(censored)
+            await Message.deleteOne({_id: censored.id})
+        else
+            // messages.push(req.body)//adding the new messages to the messages array.
+            io.emit('message', req.body) //submiting an event (notification) from the server to all clients notifying them of a new message. Here message is the event name and req.body is the message
+        res.sendStatus(200)
 
+    }catch(error){
+        res.sendStatus(500)
+        return console.error(error) //returining an error with error message.
+    } finally{
+        console.log("message post called")
+    }
+    
     // .catch((err) =>{
     //     res.sendStatus(500)
     //     return console.error(err) //returining an error with error message.
