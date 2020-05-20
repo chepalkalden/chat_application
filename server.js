@@ -21,6 +21,8 @@ app.use(express.static(__dirname)) //__dirname is used to pass the entire direct
 app.use(bodyParser.json()) //this lets bodyParser know that we expect JSON to be coming in with our http request
 app.use(bodyParser.urlencoded({extended: false}))
 
+mongoose.Promise = Promise //letting Mongoose know that the Promise library wants to use is the default ES6 Promise library.
+
 //data structure i.e. model and schema  for our message object
 var Message = mongoose.model('Message', {
     name: String,
@@ -49,23 +51,48 @@ app.post('/messages', (req,res) => {
 
     //message object based on the model to pass into db
     var message = new Message (req.body)
-    message.save((err) => {
-        if(err)
-            sendStatus(500)//server error
+
+
+    // message.save((err) => {
+    //     if(err)
+    //         sendStatus(500)//server error
         /**
          * Demonstrating Nested Callback by censoring the word "Tottenham" in our message.
          */
-        Message.findOne({message: 'Tottenham'}, (err, censored) => {
-            if(censored){
-                console.log('censored word found', censored)
-                Message.deleteOne({_id: censored.id}, (err) =>{
-                    console.log('censored message removed !!!')
-                })
-            }
-        })
+    //     Message.findOne({message: 'Tottenham'}, (err, censored) => {
+    //         if(censored){
+    //             console.log('censored word found', censored)
+    //             Message.deleteOne({_id: censored.id}, (err) =>{
+    //                 console.log('censored message removed !!!')
+    //             })
+    //         }
+    //     })
+    //     // messages.push(req.body)//adding the new messages to the messages array.
+    //     io.emit('message', req.body) //submiting an event (notification) from the server to all clients notifying them of a new message. Here message is the event name and req.body is the message
+    //     res.sendStatus(200)
+    // })
+
+
+    /**
+     * Optimizing the above nested callback functions using promise
+    */
+    message.save()
+    .then(() => {
+        console.log('Saved')
+        return Message.findOne({message: 'Tottenham'})
+    })
+    .then(censored => {
+        if(censored){
+            console.log('censored word found', censored)
+           return Message.deleteOne({_id: censored.id})
+        }
         // messages.push(req.body)//adding the new messages to the messages array.
         io.emit('message', req.body) //submiting an event (notification) from the server to all clients notifying them of a new message. Here message is the event name and req.body is the message
         res.sendStatus(200)
+    })
+    .catch((err) =>{
+        res.sendStatus(500)
+        return console.error(err) //returining an error with error message.
     })
 })
 
