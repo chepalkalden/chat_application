@@ -28,17 +28,18 @@ var Message = mongoose.model('Message', {
 })
 
 
-var messages = [
-    {name: 'Chepal', message: 'Hi'},
-    {name: 'Lampard', message: 'Hey, Mate'}
-]
+// var messages = [
+//     {name: 'Chepal', message: 'Hi'},
+//     {name: 'Lampard', message: 'Hey, Mate'}
+// ]
 
 
 //Get Message Service Endpoint
 app.get('/messages',(req, res) => {
     // res.send('Test response') // Testing get request route.  
-
-    res.send(messages) // Sending data   
+    Message.find({}, (err,messages) =>{
+        res.send(messages)
+    })
 })
 
 
@@ -51,7 +52,18 @@ app.post('/messages', (req,res) => {
     message.save((err) => {
         if(err)
             sendStatus(500)//server error
-        messages.push(req.body)//adding the new messages to the messages array.
+        /**
+         * Demonstrating Nested Callback by censoring the word "Tottenham" in our message.
+         */
+        Message.findOne({message: 'Tottenham'}, (err, censored) => {
+            if(censored){
+                console.log('censored word found', censored)
+                Message.deleteOne({_id: censored.id}, (err) =>{
+                    console.log('censored message removed !!!')
+                })
+            }
+        })
+        // messages.push(req.body)//adding the new messages to the messages array.
         io.emit('message', req.body) //submiting an event (notification) from the server to all clients notifying them of a new message. Here message is the event name and req.body is the message
         res.sendStatus(200)
     })
